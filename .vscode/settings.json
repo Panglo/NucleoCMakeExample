@@ -1,0 +1,34 @@
+{
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc/**",
+        "${workspaceFolder}/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/**",
+        "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/include/**",
+        "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/**",
+        "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/**",
+        "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32F4xx/Include/**",
+        "${workspaceFolder}/Drivers/CMSIS/Include/**",
+        "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f446xx.h",
+        "E:/ARMGCC/10_2021.07/lib/gcc/arm-none-eabi/10.3.1/**",
+        "E:/ARMGCC/10_2021.07/arm-none-eabi/include/**"
+    ],
+    "C_Cpp.default.compilerPath": "E:\\ARMGCC\\10_2021.07\\bin\\arm-none-eabi-gcc.exe",
+    "C_Cpp.default.systemIncludePath": [
+        "E:/ARMGCC/10_2021.07/lib/gcc/arm-none-eabi/10.3.1/**",
+        "E:/ARMGCC/10_2021.07/arm-none-eabi/include/**"
+    ],
+    "files.associations": {
+        "*.html": "html",
+        "cmsis_os.h": "c",
+        "cmsis_os2.h": "c",
+        "freertos.h": "c",
+        "stddef.h": "c",
+        "stdint.h": "c",
+        "main.h": "c",
+        "stm32f4xx_it.h": "c",
+        "portable.h": "c",
+        "projdefs.h": "c",
+        "freertosconfig.h": "c"
+    },
+    "cmake.configureOnOpen": false
+}

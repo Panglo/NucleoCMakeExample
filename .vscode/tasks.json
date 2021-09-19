@@ -1,0 +1,42 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start OpenOCD Server",
+            "type": "shell",
+            "command": "openocd.exe -s C:\\xpack-openocd-0.11.0-1\\scripts -f OpenOCD-Debug.txt",
+            "isBackground": true
+        },
+        {
+            "label": "Configure CMake",
+            "type": "shell",
+            "command": "cmake -DCMAKE_TOOLCHAIN_FILE=\"arm-none-eabi-gcc.cmake\" -DCMAKE_MAKE_PROGRAM=ninja.exe -G \"Ninja\" ..",
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+        },
+        {
+            "label": "Build (Ninja)",
+            "type": "shell",
+            "command": "ninja.exe",
+            "options": {
+                "cwd": "${workspaceRoot}/build"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": true,
+                "clear": false
+            }
+        }
+    ]
+}
