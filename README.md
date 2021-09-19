@@ -8,12 +8,15 @@ Build and debug tasks are specified for use with VSCode.
 For compiler and GDB tools
 ### CMake
 To generate Ninja build
+
 Added to system path
 ### Ninja (or Make, Ninja is used in this project)
 To build the project
+
 Added to system path
 ### OpenOCD
 For debugging
+
 Added to system path
 ### STM32CubeMX
 To generate initial project files. 
