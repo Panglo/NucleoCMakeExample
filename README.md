@@ -50,3 +50,7 @@ Skip to step 3 if board was programmed as described above.
 1. Program the board using the command above or STM32CubeProgrammer (or other desired program)
 1. If not already running start the `Start OpenOCD Server` task - This task will continue to run until killed, you will need to stop this task to program the controller again.
 1. Start debugging in VSCode
+
+
+# References
+https://mcuoneclipse.com/2021/05/01/visual-studio-code-for-c-c-with-arm-cortex-m-part-1/ - Parts 1-5
