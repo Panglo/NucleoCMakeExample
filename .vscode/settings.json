@@ -28,7 +28,8 @@
         "stm32f4xx_it.h": "c",
         "portable.h": "c",
         "projdefs.h": "c",
-        "freertosconfig.h": "c"
+        "freertosconfig.h": "c",
+        "semphr.h": "c"
     },
     "cmake.configureOnOpen": false
 }

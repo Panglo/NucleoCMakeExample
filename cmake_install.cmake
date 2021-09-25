@@ -1,4 +1,4 @@
-# Install script for directory: D:/ProgrammingStuff/FirstNucleo
+# Install script for directory: D:/GitkrakenRepos/FirstNucleo
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,5 +40,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "D:/ProgrammingStuff/FirstNucleo/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "D:/GitkrakenRepos/FirstNucleo/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

@@ -59,11 +59,16 @@ set(ASM_SRC
     startup_stm32f446xx.s
 )
 
+set(CLI_SRC
+    FreeRTOS-Plus-CLI/FreeRTOS_CLI.c
+)
+
 # List of source files
 set(SRC_FILES
         ${ASM_SRC}
         ${CORE_SRC}
         ${DRIVER_SRC}
+        ${CLI_SRC}
         )
 
 # Build the executable based on the source files
@@ -85,6 +90,7 @@ target_include_directories(${EXECUTABLE} PRIVATE
         Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
         Drivers/CMSIS/Device/ST/STM32F4xx/Include
         Drivers/CMSIS/Include
+        FreeRTOS-Plus-CLI
         )
 
 # Compiler options
@@ -102,7 +108,7 @@ target_compile_options(${EXECUTABLE} PRIVATE
         -g3
         )
 
-# Linker options
+# Linker options, added `-specs=nosys.specs` to fix _sbrk error
 target_link_options(${EXECUTABLE} PRIVATE
         -T${LINKER_FILE}
         -mcpu=cortex-m4
@@ -110,6 +116,7 @@ target_link_options(${EXECUTABLE} PRIVATE
         -mfpu=fpv4-sp-d16
         -mfloat-abi=hard
         -specs=nano.specs
+        -specs=nosys.specs
         -lc
         -lm
         -lnosys

@@ -51,7 +51,49 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
+osThreadId_t rxTaskHandle;
+const osThreadAttr_t rxTask_attributes = {
+  .name = "rxTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+osThreadId_t txTaskHandle;
+const osThreadAttr_t txTask_attributes = {
+  .name = "txTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+osThreadId_t cliTaskHandle;
+const osThreadAttr_t cliTask_attributes = {
+  .name = "cliTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 
+// for rx task
+size_t rxBufferPos = 0; 
+uint8_t rxBuffer[RX_BUFFER_SIZE]; // Stores the partially received message
+uint8_t rxMessage[RX_BUFFER_SIZE]; // Stores the current message
+uint8_t rxByte; // Stores the recieved byte
+size_t txBufferSize = 0;
+uint8_t txBuffer[TX_BUFFER_SIZE];
+char cliBuffer[CLI_BUFFER_SIZE];
+
+// For rx stream
+uint8_t rxStreamBufferWorkspace[RX_BUFFER_SIZE+1];
+StaticStreamBuffer_t rxStreamBufferStruct;
+StreamBufferHandle_t rxStreamBufferHandle;
+
+// For tx message buffer
+uint8_t txMessageBufferWorkspace[TX_BUFFER_SIZE+1];
+StaticMessageBuffer_t txMessageBufferStruct;
+MessageBufferHandle_t txMessageBufferHandle;
+SemaphoreHandle_t txCompleteSemaphore;
+
+
+uint8_t cliMessageBufferWorkspace[CLI_BUFFER_SIZE+1];
+StaticMessageBuffer_t cliMessageBufferStruct;
+MessageBufferHandle_t cliMessageBufferHandle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,7 +103,11 @@ static void MX_USART2_UART_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
+void StartRxTask(void * args);
+void StartTxTask(void * args);
+void StartCLITask(void * args);
 
+extern void RegisterCLICommands(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -100,6 +146,13 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  RegisterCLICommands();
+
+  HAL_StatusTypeDef status = HAL_UART_Transmit(&huart2, (uint8_t*) "Starting...\n", sizeof "Starting...\n", 1000);
+  if (status != HAL_OK) {
+    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+    for (;;){}
+  }
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -111,6 +164,8 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
+  txCompleteSemaphore = xSemaphoreCreateBinary();
+  if (txCompleteSemaphore == NULL) Error_Handler();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -119,7 +174,10 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
-  /* USER CODE END RTOS_QUEUES */
+  rxStreamBufferHandle = xStreamBufferCreateStatic(RX_BUFFER_SIZE, 1, rxStreamBufferWorkspace, &rxStreamBufferStruct);
+  txMessageBufferHandle = xMessageBufferCreateStatic(TX_BUFFER_SIZE, txMessageBufferWorkspace, &txMessageBufferStruct);
+  cliMessageBufferHandle = xMessageBufferCreateStatic(CLI_BUFFER_SIZE, cliMessageBufferWorkspace, &cliMessageBufferStruct);
+/* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
   /* creation of defaultTask */
@@ -127,6 +185,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  rxTaskHandle = osThreadNew(StartRxTask, NULL, &rxTask_attributes);
+  txTaskHandle = osThreadNew(StartTxTask, NULL, &txTask_attributes);
+  cliTaskHandle = osThreadNew(StartCLITask, NULL, &cliTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -259,7 +320,99 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (rxByte != (uint8_t) '\r'){ // Ignore carriage return character
+    xStreamBufferSendFromISR(rxStreamBufferHandle, &rxByte, 1, NULL);
+  }
 
+  HAL_UART_Receive_IT(huart, &rxByte, 1);
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+  xSemaphoreGiveFromISR(txCompleteSemaphore, NULL);
+}
+
+
+void StartRxTask(void * args)
+{
+  HAL_UART_Receive_IT(&huart2, &rxByte, 1);
+  size_t messageStart = 0;
+  for (;;) 
+  {
+    // TODO: Should occasionally timeout to check that no error has occured. 
+    size_t num_received = xStreamBufferReceive(
+      rxStreamBufferHandle, 
+      rxBuffer + rxBufferPos, 
+      RX_BUFFER_SIZE - rxBufferPos, 
+      portMAX_DELAY);
+
+    // Add new data to tx message queue, do not wait for space in queue
+    xMessageBufferSend(txMessageBufferHandle, rxBuffer + rxBufferPos, num_received, 0);
+
+    size_t count = 0;
+    size_t currentPos = rxBufferPos;
+    rxBufferPos = currentPos + num_received;
+    while (count < num_received && currentPos < RX_BUFFER_SIZE) {
+      if (rxBuffer[currentPos] == '\n') {
+        xMessageBufferSend(cliMessageBufferHandle, rxBuffer + messageStart, currentPos, 0);
+
+        if (currentPos < RX_BUFFER_SIZE - 1) {
+          messageStart = currentPos + 1;
+        }
+        else {
+          messageStart = 0;
+        }
+        
+      //   memcpy(txBuffer, rxBuffer, currentPos - messageStart); // Copy message to buffer to send
+      //   xMessageBufferSend(txMessageBufferHandle, txBuffer, currentPos - messageStart, 0);
+      //   messageStart = currentPos;
+      //   //
+      }
+
+      currentPos++;
+      count++;
+    }
+
+    if (messageStart != 0)
+    {
+      memmove(rxBuffer, rxBuffer + messageStart, currentPos - messageStart); // Move partial mesage back to start of buffer
+    }
+  }
+}
+
+#define START_MESSAGE "Hello from Tx!\n"
+void StartTxTask(void * args) 
+{
+  HAL_UART_Transmit_IT(&huart2, (uint8_t*) START_MESSAGE, sizeof START_MESSAGE);
+  xSemaphoreTake(txCompleteSemaphore, portMAX_DELAY);
+
+  for (;;) 
+  {
+    // Wait for a message to send
+    size_t messageSize = xMessageBufferReceive(txMessageBufferHandle, txBuffer, TX_BUFFER_SIZE, portMAX_DELAY);
+
+    HAL_UART_Transmit_IT(&huart2, txBuffer, messageSize);
+
+    // Wait for notification that message has been sent
+    xSemaphoreTake(txCompleteSemaphore, portMAX_DELAY);
+  }
+}
+
+void StartCLITask(void * args) 
+{
+  for (;;) {
+    xMessageBufferReceive(cliMessageBufferHandle, cliBuffer, CLI_BUFFER_SIZE, portMAX_DELAY);
+    char* cliOutputBuffer = pvPortMalloc(CLI_BUFFER_SIZE);
+    if (cliOutputBuffer == NULL) continue;  // If unable to allocate mem to heap for buffer, skip this message.
+
+    // Parse command
+    FreeRTOS_CLIProcessCommand(cliBuffer, cliOutputBuffer, CLI_BUFFER_SIZE);
+
+    // Send response
+    xMessageBufferSend(txMessageBufferHandle, cliOutputBuffer, strlen(cliOutputBuffer), 0);
+  }
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */

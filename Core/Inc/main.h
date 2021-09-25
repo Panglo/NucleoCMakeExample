@@ -32,7 +32,13 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "FreeRTOS.h"
+#include "semphr.h"
+#include "stream_buffer.h"
+#include "message_buffer.h"
+#include "FreeRTOS_CLI.h"
+#include <stdlib.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -42,7 +48,9 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+#define RX_BUFFER_SIZE 512
+#define TX_BUFFER_SIZE 512
+#define CLI_BUFFER_SIZE 512
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
