@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/build/FirstNucleo.elf",
             "args": [],
-            "stopAtEntry": false,
+            "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
@@ -23,7 +23,7 @@
                     "ignoreFailures": true
                 },
                 { "description": "Connect to OpenOCD GDB server", "text": "target extended-remote localhost:3333"},
-                { "description": "Set binary file", "text": "file D:/ProgrammingStuff/FirstNucleo/build/FirstNucleo.elf"},
+                { "description": "Set binary file", "text": "file D:/GitkrakenRepos/NucleoCmakeExample/build/FirstNucleo.elf"},
                 { "text": "monitor reset halt"}
             ]
         }

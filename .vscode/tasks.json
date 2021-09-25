@@ -12,7 +12,7 @@
         {
             "label": "Configure CMake",
             "type": "shell",
-            "command": "cmake -DCMAKE_TOOLCHAIN_FILE=\"arm-none-eabi-gcc.cmake\" -DCMAKE_MAKE_PROGRAM=ninja.exe -G \"Ninja\" ..",
+            "command": "cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=\"arm-none-eabi-gcc.cmake\" -DCMAKE_MAKE_PROGRAM=ninja.exe -G \"Ninja\" ..",
             "options": {
                 "cwd": "${workspaceRoot}/build"
             },
