@@ -73,7 +73,6 @@ const osThreadAttr_t cliTask_attributes = {
 // for rx task
 size_t rxBufferPos = 0; 
 uint8_t rxBuffer[RX_BUFFER_SIZE]; // Stores the partially received message
-uint8_t rxMessage[RX_BUFFER_SIZE]; // Stores the current message
 uint8_t rxByte; // Stores the recieved byte
 size_t txBufferSize = 0;
 uint8_t txBuffer[TX_BUFFER_SIZE];
@@ -337,7 +336,13 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 void StartRxTask(void * args)
 {
   HAL_UART_Receive_IT(&huart2, &rxByte, 1);
-  size_t messageStart = 0;
+  size_t messageIndex = 0;
+  uint8_t* currentMessage = pvPortMalloc(RX_BUFFER_SIZE);
+
+  if (currentMessage == NULL) {
+    Error_Handler();
+  }
+
   for (;;) 
   {
     // TODO: Should occasionally timeout to check that no error has occured. 
@@ -349,34 +354,19 @@ void StartRxTask(void * args)
 
     // Add new data to tx message queue, do not wait for space in queue
     xMessageBufferSend(txMessageBufferHandle, rxBuffer + rxBufferPos, num_received, 0);
-
-    size_t count = 0;
-    size_t currentPos = rxBufferPos;
-    rxBufferPos = currentPos + num_received;
-    while (count < num_received && currentPos < RX_BUFFER_SIZE) {
-      if (rxBuffer[currentPos] == '\n') {
-        xMessageBufferSend(cliMessageBufferHandle, rxBuffer + messageStart, currentPos, 0);
-
-        if (currentPos < RX_BUFFER_SIZE - 1) {
-          messageStart = currentPos + 1;
-        }
-        else {
-          messageStart = 0;
-        }
-        
-      //   memcpy(txBuffer, rxBuffer, currentPos - messageStart); // Copy message to buffer to send
-      //   xMessageBufferSend(txMessageBufferHandle, txBuffer, currentPos - messageStart, 0);
-      //   messageStart = currentPos;
-      //   //
-      }
-
-      currentPos++;
-      count++;
-    }
-
-    if (messageStart != 0)
+    
+    for (size_t i = 0; i < num_received; i++)
     {
-      memmove(rxBuffer, rxBuffer + messageStart, currentPos - messageStart); // Move partial mesage back to start of buffer
+      if (rxBuffer[i] != '\n')
+      {
+        currentMessage[messageIndex] = rxBuffer[i];
+        messageIndex++;
+      }
+      else 
+      {
+        xMessageBufferSend(cliMessageBufferHandle, currentMessage, messageIndex, 0);
+        messageIndex = 0;
+      }
     }
   }
 }
@@ -407,10 +397,16 @@ void StartCLITask(void * args)
     if (cliOutputBuffer == NULL) continue;  // If unable to allocate mem to heap for buffer, skip this message.
 
     // Parse command
-    FreeRTOS_CLIProcessCommand(cliBuffer, cliOutputBuffer, CLI_BUFFER_SIZE);
+    BaseType_t hasData;
+    do {
+      hasData = FreeRTOS_CLIProcessCommand(cliBuffer, cliOutputBuffer, CLI_BUFFER_SIZE);
+      
+      // Send response if there is a new line available
+      if (hasData) xMessageBufferSend(txMessageBufferHandle, cliOutputBuffer, strlen(cliOutputBuffer), 0);
+    } while (hasData != pdFALSE);
 
-    // Send response
-    xMessageBufferSend(txMessageBufferHandle, cliOutputBuffer, strlen(cliOutputBuffer), 0);
+    // Cleanup memory
+    vPortFree(cliOutputBuffer);
   }
 }
 /* USER CODE END 4 */

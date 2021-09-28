@@ -9,7 +9,7 @@ static BaseType_t EchoCommand(char *pcWriteBuffer, size_t xWriteBufferLen, const
 static const CLI_Command_Definition_t helpDefinition = 
 {
     "echo", // Command string
-    "echo: Echos back each parameter on a new linern", // Help string
+    "echo: Echos back each parameter on a new line\r\n", // Help string
     EchoCommand, // Command function
     -1 // Number of arg command accepts, -1 indicates inf
 };
@@ -34,7 +34,7 @@ static BaseType_t EchoCommand(char *pcWriteBuffer, size_t xWriteBufferLen, const
 
         currentParameter = 1;
 
-        return pdPASS;
+        return pdTRUE;
     }
     
     BaseType_t parameterLength;
