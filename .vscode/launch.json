@@ -24,7 +24,7 @@
                 },
                 { "description": "Connect to OpenOCD GDB server", "text": "target extended-remote localhost:3333"},
                 { "description": "Set binary file", "text": "file D:/GitkrakenRepos/NucleoCmakeExample/build/FirstNucleo.elf"},
-                { "text": "monitor reset halt"}
+                { "text": "monitor halt"}
             ]
         }
     ]
